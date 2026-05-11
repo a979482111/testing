@@ -26,20 +26,17 @@ WORKDIR /app
 # 安装 pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# 复制后端依赖
-COPY backend/package.json backend/pnpm-lock.yaml ./backend/
+# 复制后端依赖到根目录安装（确保 express 等依赖在正确位置）
+COPY backend/package.json backend/pnpm-lock.yaml ./
 
 # 安装后端生产依赖
-RUN cd backend && pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod --frozen-lockfile
 
 # 复制构建好的前端文件
 COPY --from=frontend-builder /app/dist ./dist
 
 # 复制后端代码
 COPY backend/ ./backend/
-
-# 复制根目录文件
-COPY package.json ./
 
 # 创建数据目录
 RUN mkdir -p /app/backend/data
