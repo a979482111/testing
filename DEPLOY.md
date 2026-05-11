@@ -6,134 +6,157 @@
 
 ## 📋 目录
 
-1. [快速开始（Docker 一键部署）](#快速开始 docker-一键部署)
-2. [方案对比](#方案对比)
-3. [方案一：前后端合并部署（推荐）](#方案一前后端合并部署推荐)
-4. [方案二：使用 PM2 进程管理](#方案二使用 pm2 进程管理)
-5. [方案三：Docker 容器化部署](#方案三 docker-容器化部署)
-6. [域名和 HTTPS 配置](#域名和 https 配置)
-7. [常见问题](#常见问题)
+1. [快速开始（Docker 一键部署 - 推荐）](#快速开始 docker-一键部署---推荐)
+2. [方案一：使用 PM2 进程管理](#方案一使用 pm2-进程管理)
+3. [方案二：直接运行](#方案二直接运行)
+4. [配置域名和 HTTPS](#配置域名和 https)
+5. [常见问题](#常见问题)
 
 ---
 
-## 快速开始（Docker 一键部署）🚀
+## 快速开始（Docker 一键部署 - 推荐）⭐⭐⭐
 
-### 方式 1：服务器直接构建（最简单）
+**最简单、最可靠的部署方式！**
+
+### 步骤 1：准备服务器
+
+SSH 登录你的服务器：
+```bash
+ssh root@你的服务器 IP
+```
+
+### 步骤 2：安装 Docker
 
 ```bash
-# 1. SSH 登录服务器
-ssh root@你的服务器 IP
-
-# 2. 安装 Docker（如果是第一次）
+# Ubuntu/Debian
 curl -fsSL https://get.docker.com | sh
 
-# 3. 克隆项目代码
-git clone <你的仓库地址>
-cd test2
+# CentOS
+yum install -y yum-utils
+yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+systemctl start docker
+```
 
-# 4. 一键构建并启动
+### 步骤 3：克隆项目代码
+
+```bash
+git clone https://github.com/a979482111/testing.git
+cd testing
+```
+
+### 步骤 4：一键启动
+
+```bash
+docker-compose up -d --build
+```
+
+### 步骤 5：查看状态
+
+```bash
+# 查看容器状态
+docker-compose ps
+
+# 查看日志
+docker-compose logs -f
+
+# 按 Ctrl+C 退出日志
+```
+
+### 步骤 6：配置防火墙
+
+**Ubuntu/Debian:**
+```bash
+ufw allow 3001
+ufw allow 22
+ufw enable
+```
+
+**CentOS:**
+```bash
+firewall-cmd --permanent --add-port=3001/tcp
+firewall-cmd --reload
+```
+
+**云服务器（阿里云/腾讯云等）：**
+还需要在控制台配置安全组，开放 3001 端口。
+
+### 步骤 7：访问游戏
+
+浏览器打开：
+```
+http://你的服务器 IP:3001
+```
+
+---
+
+## Docker 常用命令
+
+```bash
+# 查看服务状态
+docker-compose ps
+
+# 查看日志
+docker-compose logs -f
+
+# 重启服务
+docker-compose restart
+
+# 停止服务
+docker-compose down
+
+# 重新构建并启动
 docker-compose up -d --build
 
-# 5. 查看状态
-docker-compose logs -f
-```
-
-访问 `http://服务器IP:3001` 即可！
-
-### 方式 2：本地构建镜像后上传
-
-**在本地 Windows 执行：**
-```bash
-# 修改 docker-deploy.bat 中的服务器配置，然后双击运行
-docker-deploy.bat
-```
-
-**在服务器执行：**
-```bash
-# SSH 登录服务器
-ssh root@你的服务器 IP
-
-# 运行部署脚本
-bash docker-deploy-server.sh
+# 更新代码后重新部署
+git pull
+docker-compose up -d --build
 ```
 
 ---
 
-## 方案对比
+## 方案一：使用 PM2 进程管理 ⭐⭐
 
-| 方案 | 难度 | 端口数 | 适用场景 |
-|------|------|--------|----------|
-| **Docker 一键部署** | ⭐ 简单 | 1 个 | **推荐！生产环境、个人项目** |
-| **方案一：合并部署** | ⭐ 简单 | 1 个 | 学习 Docker 前的过渡方案 |
-| **方案二：PM2 管理** | ⭐⭐ 中等 | 1 个 | 无 Docker 环境的服务器 |
-| **方案三：Docker 高级** | ⭐⭐⭐ 复杂 | 1 个 | 需要自定义镜像、CI/CD |
+适合没有 Docker 环境的服务器。
 
----
-
-## 方案一：前后端合并部署（推荐）⭐
-
-### 本地构建
-
-**Windows:**
-```bash
-deploy.bat
-```
-
-**Linux/Mac:**
-```bash
-chmod +x deploy.sh
-./deploy.sh
-```
-
-### 上传到服务器
-
-使用 SCP 或 FTP 将以下文件上传到服务器：
-```
-- dist/              # 前端构建产物
-- backend/           # 后端代码（不含 node_modules）
-- package.json
-- pnpm-lock.yaml
-```
-
-### 服务器上操作
+### 步骤 1：安装 Node.js 和 pnpm
 
 ```bash
-# 1. 安装 Node.js 和 pnpm
+# 安装 Node.js 20
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt install -y nodejs
+
+# 安装 pnpm
 curl -fsSL https://get.pnpm.io/install.sh | sh -
 
-# 2. 进入项目目录
-cd /path/to/snake-game
-
-# 3. 安装依赖并构建
-pnpm install
-pnpm build
-
-# 4. 安装后端依赖
-cd backend
-pnpm install --prod
-
-# 5. 启动服务
-NODE_ENV=production node index.js
+# 验证安装
+node --version
+pnpm --version
 ```
 
-访问 `http://服务器IP:3001` 即可游戏！
-
----
-
-## 方案二：使用 PM2 进程管理 ⭐⭐
-
-PM2 可以让你的服务在后台持续运行，自动重启。
-
-### 安装 PM2
+### 步骤 2：安装 PM2
 
 ```bash
 npm install -g pm2
 ```
 
-### 启动服务
+### 步骤 3：克隆项目并安装依赖
 
 ```bash
-# 使用 PM2 启动
+git clone https://github.com/a979482111/testing.git
+cd testing
+
+# 安装所有依赖（重要：在项目根目录安装）
+pnpm install --prod
+
+# 构建前端
+pnpm build
+```
+
+### 步骤 4：使用 PM2 启动
+
+```bash
+# 启动服务
 pm2 start ecosystem.config.js
 
 # 查看状态
@@ -142,99 +165,123 @@ pm2 status
 # 查看日志
 pm2 logs
 
-# 停止服务
-pm2 stop snake-game
-
-# 重启服务
-pm2 restart snake-game
-```
-
-### 开机自启动
-
-```bash
-# 生成开机自启动脚本
+# 开机自启动
 pm2 startup
-
-# 保存当前进程列表
 pm2 save
 ```
 
----
+### 步骤 5：配置防火墙
 
-## 方案三：Docker 容器化部署（高级）⭐⭐⭐
+同上（Docker 部署的步骤 6）。
 
-> **提示：** 90% 的用户使用上面的「快速开始」即可，本节适合需要自定义镜像的用户。
-
-### 构建镜像
+### 常用 PM2 命令
 
 ```bash
-# 本地构建
-docker build -t snake-game:latest .
+# 查看状态
+pm2 status
 
-# 查看镜像
-docker images snake-game
-```
+# 查看日志
+pm2 logs
 
-### 推送镜像到 Docker Hub（可选）
+# 重启服务
+pm2 restart snake-game
 
-```bash
-# 登录 Docker Hub
-docker login
+# 停止服务
+pm2 stop snake-game
 
-# 标记镜像（替换为你的 Docker Hub 用户名）
-docker tag snake-game:latest your-username/snake-game:latest
+# 删除服务
+pm2 delete snake-game
 
-# 推送
-docker push your-username/snake-game:latest
-```
-
-### 从 Docker Hub 拉取（在服务器上）
-
-```bash
-docker pull your-username/snake-game:latest
-```
-
-### 运行容器
-
-```bash
-docker run -d \
-  -p 3001:3001 \
-  -v $(pwd)/backend/data:/app/backend/data \
-  --name snake-game \
-  snake-game
-```
-
-### Docker Compose（推荐）
-
-```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  snake-game:
-    build: .
-    ports:
-      - "3001:3001"
-    volumes:
-      - ./backend/data:/app/backend/data
-    restart: always
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-```
-
-启动：
-```bash
-docker-compose up -d
+# 查看详细信息
+pm2 show snake-game
 ```
 
 ---
 
-## 域名和 HTTPS 配置
+## 方案二：直接运行 ⭐
+
+适合测试或临时部署。
+
+### 步骤 1：安装 Node.js 和 pnpm
+
+同 PM2 方案的步骤 1。
+
+### 步骤 2：克隆项目并安装依赖
+
+```bash
+git clone https://github.com/a979482111/testing.git
+cd testing
+
+# 安装所有依赖（重要：在项目根目录安装）
+pnpm install --prod
+
+# 构建前端
+pnpm build
+```
+
+### 步骤 3：启动服务
+
+```bash
+# 使用 PM2（推荐，可自动重启）
+pm2 start ecosystem.config.js
+
+# 或直接运行（不推荐，关闭终端服务会停止）
+NODE_ENV=production node backend/index.js
+```
+
+### 后台运行（如果不使用 PM2）
+
+```bash
+# 使用 nohup 后台运行
+nohup NODE_ENV=production node backend/index.js > output.log 2>&1 &
+
+# 查看进程
+ps aux | grep node
+
+# 查看日志
+tail -f output.log
+
+# 停止服务
+kill $(ps aux | grep 'node backend/index.js' | grep -v grep | awk '{print $2}')
+```
+
+---
+
+## 💡 为什么在项目根目录安装依赖？
+
+后端的 `backend/index.js` 使用 ES Module (`import express from 'express'`)，依赖需要安装在项目根目录（`package.json` 所在目录）。
+
+**❌ 错误做法：**
+```bash
+cd backend
+pnpm install --prod  # 依赖安装在 backend/node_modules
+node index.js        # ❌ 报错：Cannot find package 'express'
+```
+
+**✅ 正确做法：**
+```bash
+# 在项目根目录安装所有依赖
+pnpm install --prod  # ✅ 依赖安装在 node_modules
+pnpm build
+node backend/index.js  # ✅ 可以正常访问 express
+```
+
+---
+
+## 配置域名和 HTTPS
 
 ### 使用 Nginx 反向代理
 
-安装 Nginx 后，配置 `/etc/nginx/sites-available/snake-game`：
+安装 Nginx：
+```bash
+# Ubuntu/Debian
+apt install -y nginx
 
+# CentOS
+yum install -y nginx
+```
+
+配置 `/etc/nginx/sites-available/snake-game`：
 ```nginx
 server {
     listen 80;
@@ -251,109 +298,159 @@ server {
 }
 ```
 
+启用配置：
+```bash
+ln -s /etc/nginx/sites-available/snake-game /etc/nginx/sites-enabled/
+nginx -t
+systemctl restart nginx
+```
+
 ### 使用 Let's Encrypt 免费 HTTPS
 
 ```bash
 # 安装 Certbot
-sudo apt install certbot python3-certbot-nginx
+apt install -y certbot python3-certbot-nginx
 
 # 获取证书
-sudo certbot --nginx -d your-domain.com
+certbot --nginx -d your-domain.com
 ```
 
 ---
 
 ## 常见问题
 
-### Q0: 如何用 Docker 部署到服务器？（新手必读）
+### Q1: 无法访问 3001 端口？
 
-**完整步骤：**
-
+**检查防火墙：**
 ```bash
-# 步骤 1: SSH 登录服务器
-ssh root@你的服务器 IP
+# Ubuntu
+ufw status
+ufw allow 3001
 
-# 步骤 2: 安装 Docker（首次部署需要）
-curl -fsSL https://get.docker.com | sh
-
-# 步骤 3: 验证 Docker 安装
-docker --version
-docker-compose --version
-
-# 步骤 4: 克隆项目代码
-git clone <你的仓库地址>
-cd test2
-
-# 步骤 5: 一键构建并启动
-docker-compose up -d --build
-
-# 步骤 6: 查看部署状态
-docker-compose ps
-docker-compose logs -f
+# CentOS
+firewall-cmd --list-ports
+firewall-cmd --permanent --add-port=3001/tcp
+firewall-cmd --reload
 ```
 
-**访问：** `http://服务器 IP:3001`
+**检查云服务器安全组：**
+登录云控制台（阿里云/腾讯云），确认已开放 3001 端口。
 
-**停止服务：** `docker-compose down`
+**检查服务是否运行：**
+```bash
+# Docker
+docker-compose ps
 
-**重启服务：** `docker-compose restart`
+# PM2
+pm2 status
 
-### Q1: 玩家无法连接？
-- 检查服务器防火墙：`ufw allow 3001`
-- 检查云服务商安全组规则
+# 直接运行
+ps aux | grep node
+```
 
 ### Q2: 排行榜数据丢失？
-- 确保 `backend/data` 目录有写入权限
-- 使用 Docker 时挂载数据卷
+
+**Docker 部署：** 确保 `docker-compose.yml` 中配置了数据卷挂载：
+```yaml
+volumes:
+  - ./backend/data:/app/backend/data
+```
+
+**PM2/直接运行：** 确保 `backend/data` 目录有写入权限：
+```bash
+chmod 755 backend/data
+```
 
 ### Q3: 服务崩溃了？
-- 使用 PM2 可以自动重启
-- 查看日志：`pm2 logs` 或 `docker logs snake-game`
+
+**使用 PM2：** 会自动重启，查看日志：
+```bash
+pm2 logs
+```
+
+**使用 Docker：** 查看日志：
+```bash
+docker-compose logs
+```
 
 ### Q4: 如何更新代码？
 
-**使用 Docker 部署时：**
-
+**Docker 部署：**
 ```bash
-# 1. 拉取新代码
 git pull
-
-# 2. 重新构建并重启
 docker-compose up -d --build
-
-# 或者只重启容器（如果代码已更新）
-docker-compose restart
 ```
 
-**使用 PM2 部署时：**
+**PM2 部署：**
 ```bash
-# 1. 拉取新代码
 git pull
-
-# 2. 重新构建
+pnpm install --prod
 pnpm build
-
-# 3. 重启服务
 pm2 restart snake-game
+```
+
+### Q5: 如何查看服务器 IP？
+
+```bash
+# 在服务器上执行
+curl ifconfig.me
+```
+
+### Q6: Docker 构建失败？
+
+**清理缓存重新构建：**
+```bash
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+**查看构建日志：**
+```bash
+docker-compose build --progress=plain
 ```
 
 ---
 
 ## 推荐云服务商
 
-- **国内**：阿里云、腾讯云、华为云
-- **国外**：Vultr、DigitalOcean、Linode
-- **免费额度**：Oracle Cloud、Google Cloud
+| 服务商 | 价格 | 特点 |
+|--------|------|------|
+| **阿里云** | ~¥99/年 | 国内访问快，适合新手 |
+| **腾讯云** | ~¥99/年 | 性价比高，游戏优化 |
+| **华为云** | ~¥88/年 | 国产自研，安全稳定 |
+| **Vultr** | $5/月 | 按小时计费，随时删除 |
+| **DigitalOcean** | $6/月 | 开发者友好，文档完善 |
 
 ---
 
 ## 技术栈
 
-- **前端**：Vue 3 + Vite
-- **后端**：Node.js + Express
-- **部署**：PM2 / Docker
-- **反向代理**：Nginx（可选）
+- **前端**：Vue 3.5 + Vite 5 + Pinia + Vue Router
+- **后端**：Node.js 20 + Express 5
+- **部署**：Docker / PM2
+- **包管理**：pnpm
+
+---
+
+## 项目结构
+
+```
+.
+├── src/                 # 前端源码
+├── backend/             # 后端代码
+│   ├── index.js         # 后端入口
+│   ├── package.json     # 后端依赖
+│   └── data/            # 排行榜数据（持久化）
+├── dist/                # 前端构建产物
+├── Dockerfile           # Docker 构建配置
+├── docker-compose.yml   # Docker 编排配置
+├── ecosystem.config.js  # PM2 配置
+└── package.json         # 前端依赖
+```
 
 ---
 
 祝你部署成功！🎮
+
+如有问题，请查看日志或重新检查每一步操作。
